@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+
+<html>
+
+  <head>
+
+    <meta charset = "utf-8">
+    <meta name = "viewport" content = "width=device-width">
+    <title>Tesseract</title>
+
+    <style>
+      * { margin:0; padding:0; }
+      html, body { height:100%; width:100%; }
+      canvas { height:100%; position:fixed; width:100%; }
+    </style>
+
+  </head>
+
+  <body>
+
+    <canvas></canvas>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/5.9.0/math.min.js"></script>
+<script type = "text/javascript">
+const Point2D = function(x, y) { this.x = x; this.y = y; };
+const Point3D = function(x, y, z) { this.x = x; this.y = y; this.z = z; };
+
+var context = document.querySelector("canvas").getContext("2d");
+var height = document.documentElement.clientHeight;
+var width = document.documentElement.clientWidth;
+var angle = 0;
+var projection = [
+  [1, 0, 0],
+  [0, 1, 0]];
+
+var points1 = new Array(8);
+points1[0] = new Point3D(-50, -50, -50);
+points1[1] = new Point3D(50, -50, -50);
+points1[2] = new Point3D(50, 50, -50);
+points1[3] = new Point3D(-50, 50, -50);
+points1[4] = new Point3D(-50, -50, 50);
+points1[5] = new Point3D(50, -50, 50);
+points1[6] = new Point3D(50, 50, 50);
+points1[7] = new Point3D(-50, 50, 50);	  
+
+var points2 = new Array(8);
+points2[0] = new Point3D(-25, -25, -25);
+points2[1] = new Point3D(25, -25, -25);
+points2[2] = new Point3D(25, 25, -25);
+points2[3] = new Point3D(-25, 25, -25);
+points2[4] = new Point3D(-25, -25, 25);
+points2[5] = new Point3D(25, -25, 25);
+points2[6] = new Point3D(25, 25, 25);
+points2[7] = new Point3D(-25, 25, 25);	  
+
+
+function matmul(p, v) {
+	val = math.multiply(p, [v.x, v.y, v.z]);
+	return new Point3D(val[0], val[1], val[2]);	
+}
+
+function loop() {
+	window.requestAnimationFrame(loop);
+	height = document.documentElement.clientHeight;
+	width = document.documentElement.clientWidth;
+	context.canvas.height = height;
+	context.canvas.width  = width;
+
+	a = drawCube(points1);
+	b = drawCube(points2);
+	
+	for (i = 0; i < 8; i++) _connect(i, i, a, b);
+}
+
+function drawCube(points) {
+	var rotationZ = [
+	[Math.cos(angle), -Math.sin(angle), 0],
+	[Math.sin(angle), Math.cos(angle), 0],
+	[0, 0, 1]];
+	
+	var rotationX = [
+	[ 1, 0, 0],
+	[ 0, Math.cos(angle), -Math.sin(angle)],
+	[ 0, Math.sin(angle), Math.cos(angle)]
+	];
+
+	var rotationY = [
+	[ Math.cos(angle), 0, Math.sin(angle)],
+	[ 0, 1, 0],
+	[ -Math.sin(angle), 0, Math.cos(angle)]
+	];
+
+	var projected = Array(8);
+	
+	var index = 0;
+	for (index in points) {
+		v = points[index]
+		var rotated = matmul(rotationY, v);
+		rotated = matmul(rotationX, rotated);
+		rotated = matmul(rotationZ, rotated);
+
+		var projected2d = matmul(projection, rotated);
+		projected[index] = projected2d;
+		
+		index++;
+	}
+	
+	for (index in projected) {
+		v = projected[index]
+		context.beginPath();
+  		context.arc((width/2)+v.x, (height/2)+v.y, 1, 0, 2 * Math.PI, true);
+  		context.stroke();
+	}
+	
+	for (i = 0; i < 4; i++) {
+		_connect(i, (i+1) % 4, projected);
+		_connect(i+4, ((i+1) % 4)+4, projected);
+		_connect(i, i+4, projected);
+	}
+   
+   angle += 0.01
+   
+   return projected;
+}
+
+function _connect(i, j, points, points2) {
+	var a = points[i];
+	var b = points[j];
+	if (typeof points2 != 'undefined')
+		b = points2[j];
+	
+	var w = (width/2)
+	var h = (height/2)
+	
+	context.beginPath();
+	context.lineTo(w+a.x, h+a.y);
+	context.lineTo(w+b.x, h+b.y);
+	context.closePath();
+	context.fill();
+	context.stroke();
+}
+
+loop();
+
+</script>
+
+  </body>
+
+</html>
